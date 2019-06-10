@@ -20,10 +20,11 @@ import com.android.wallpaper.module.WallpaperPreferences;
 public interface CustomizationPreferences extends WallpaperPreferences {
 
     String KEY_CUSTOM_THEME= "themepicker_custom_theme";
+    String KEY_VISITED_PREFIX = "themepicker_visited_";
 
-    String getSerializedCustomTheme();
+    String getSerializedCustomThemes();
 
-    void storeCustomTheme(String serializedCustomTheme);
+    void storeCustomThemes(String serializedCustomThemes);
 
     boolean getTabVisited(String id);
 

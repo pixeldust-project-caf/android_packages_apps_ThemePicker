@@ -45,12 +45,11 @@ import androidx.core.graphics.PathParser;
 
 import com.android.customization.model.CustomizationManager;
 import com.android.customization.model.CustomizationOption;
-import com.android.customization.model.theme.custom.CustomTheme;
 import com.android.customization.widget.DynamicAdaptiveIconDrawable;
 import com.android.wallpaper.R;
 import com.android.wallpaper.asset.Asset;
 import com.android.wallpaper.asset.BitmapCachingAsset;
-import com.android.wallpaper.asset.ResourceAsset;
+import com.android.wallpaper.model.LiveWallpaperInfo;
 import com.android.wallpaper.model.WallpaperInfo;
 
 import org.json.JSONObject;
@@ -108,7 +107,7 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
                     mPreviewInfo.shapeDrawable);
         }
         if (!mPreviewInfo.icons.isEmpty()) {
-            Drawable icon = mPreviewInfo.icons.get(0).mutate();
+            Drawable icon = mPreviewInfo.icons.get(0).getConstantState().newDrawable().mutate();
             icon.setTint(res.getColor(R.color.icon_thumbnail_color, null));
             ((ImageView) view.findViewById(R.id.theme_option_icon)).setImageDrawable(
                     icon);
@@ -192,10 +191,17 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         if (isDefault()) {
             return "";
         }
+        return getJsonPackages().toString();
+    }
+
+    JSONObject getJsonPackages() {
+        if (isDefault()) {
+            return new JSONObject();
+        }
         JSONObject json = new JSONObject(mPackagesByCategory);
         // Remove items with null values to avoid deserialization issues.
         removeNullValues(json);
-        return json.toString();
+        return json;
     }
 
     private void removeNullValues(JSONObject json) {
@@ -256,7 +262,7 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         private PreviewInfo(Context context, Typeface bodyFontFamily, Typeface headlineFontFamily,
                 int colorAccentLight, int colorAccentDark, List<Drawable> icons,
                 Drawable shapeDrawable, @Dimension int cornerRadius,
-                @Nullable ResourceAsset wallpaperAsset, List<Drawable> shapeAppIcons) {
+                @Nullable Asset wallpaperAsset, List<Drawable> shapeAppIcons) {
             this.bodyFontFamily = bodyFontFamily;
             this.headlineFontFamily = headlineFontFamily;
             this.colorAccentLight = colorAccentLight;
@@ -288,10 +294,11 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         @ColorInt private int mColorAccentLight = -1;
         @ColorInt private int mColorAccentDark = -1;
         private List<Drawable> mIcons = new ArrayList<>();
-        private String mShapePath;
+        private String mPathString;
+        private Path mShapePath;
         private boolean mIsDefault;
         @Dimension private int mCornerRadius;
-        private ResourceAsset mWallpaperAsset;
+        private Asset mWallpaperAsset;
         private WallpaperInfo mWallpaperInfo;
         protected Map<String, String> mPackages = new HashMap<>();
         private List<Drawable> mAppIcons = new ArrayList<>();
@@ -301,11 +308,14 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
                     createPreviewInfo(context));
         }
 
-        protected PreviewInfo createPreviewInfo(Context context) {
+        public PreviewInfo createPreviewInfo(Context context) {
             ShapeDrawable shapeDrawable = null;
             List<Drawable> shapeIcons = new ArrayList<>();
-            if (!TextUtils.isEmpty(mShapePath)) {
-                Path path = PathParser.createPathFromPathData(mShapePath);
+            Path path = mShapePath;
+            if (!TextUtils.isEmpty(mPathString)) {
+                path = PathParser.createPathFromPathData(mPathString);
+            }
+            if (path != null) {
                 PathShape shape = new PathShape(path, PATH_SIZE, PATH_SIZE);
                 shapeDrawable = new ShapeDrawable(shape);
                 shapeDrawable.setIntrinsicHeight((int) PATH_SIZE);
@@ -315,6 +325,8 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
                         AdaptiveIconDrawable adaptiveIcon = (AdaptiveIconDrawable) icon;
                         shapeIcons.add(new DynamicAdaptiveIconDrawable(adaptiveIcon.getBackground(),
                                 adaptiveIcon.getForeground(), path));
+                    } else if (icon instanceof DynamicAdaptiveIconDrawable) {
+                        shapeIcons.add(icon);
                     }
                     // TODO: add iconloader library's legacy treatment helper methods for
                     //  non-adaptive icons
@@ -323,6 +335,14 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
             return new PreviewInfo(context, mBodyFontFamily, mHeadlineFontFamily, mColorAccentLight,
                     mColorAccentDark, mIcons, shapeDrawable, mCornerRadius,
                     mWallpaperAsset, shapeIcons);
+        }
+
+        public Map<String, String> getPackages() {
+            return Collections.unmodifiableMap(mPackages);
+        }
+
+        public String getTitle() {
+            return mTitle;
         }
 
         public Builder setTitle(String title) {
@@ -361,6 +381,11 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         }
 
         public Builder setShapePath(String path) {
+            mPathString = path;
+            return this;
+        }
+
+        public Builder setShapePath(Path path) {
             mShapePath = path;
             return this;
         }
@@ -373,7 +398,13 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
             return this;
         }
 
-        public Builder setWallpaperAsset(ResourceAsset wallpaperAsset) {
+        public Builder setLiveWallpaperInfo(LiveWallpaperInfo info) {
+            mWallpaperInfo = info;
+            return this;
+        }
+
+
+        public Builder setWallpaperAsset(Asset wallpaperAsset) {
             mWallpaperAsset = wallpaperAsset;
             return this;
         }

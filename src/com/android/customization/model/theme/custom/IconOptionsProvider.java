@@ -21,6 +21,7 @@ import static com.android.customization.model.ResourceConstants.OVERLAY_CATEGORY
 import static com.android.customization.model.ResourceConstants.OVERLAY_CATEGORY_ICON_LAUNCHER;
 import static com.android.customization.model.ResourceConstants.OVERLAY_CATEGORY_ICON_SETTINGS;
 import static com.android.customization.model.ResourceConstants.OVERLAY_CATEGORY_ICON_SYSUI;
+import static com.android.customization.model.ResourceConstants.OVERLAY_CATEGORY_ICON_THEMEPICKER;
 
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -51,6 +52,7 @@ public class IconOptionsProvider extends ThemeComponentOptionProvider<IconOption
     private final List<String> mSysUiIconsOverlayPackages = new ArrayList<>();
     private final List<String> mSettingsIconsOverlayPackages = new ArrayList<>();
     private final List<String> mLauncherIconsOverlayPackages = new ArrayList<>();
+    private final List<String> mThemePickerIconsOverlayPackages = new ArrayList<>();
 
     public IconOptionsProvider(Context context, OverlayManagerCompat manager) {
         super(context, manager, OVERLAY_CATEGORY_ICON_ANDROID);
@@ -61,6 +63,8 @@ public class IconOptionsProvider extends ThemeComponentOptionProvider<IconOption
                 OVERLAY_CATEGORY_ICON_SETTINGS, UserHandle.myUserId(), targetPackages));
         mLauncherIconsOverlayPackages.addAll(manager.getOverlayPackagesForCategory(
                 OVERLAY_CATEGORY_ICON_LAUNCHER, UserHandle.myUserId(), targetPackages));
+        mThemePickerIconsOverlayPackages.addAll(manager.getOverlayPackagesForCategory(
+                OVERLAY_CATEGORY_ICON_THEMEPICKER, UserHandle.myUserId(), targetPackages));
     }
 
     @Override
@@ -93,6 +97,10 @@ public class IconOptionsProvider extends ThemeComponentOptionProvider<IconOption
             addOrUpdateOption(optionsByPrefix, overlayPackage, OVERLAY_CATEGORY_ICON_LAUNCHER);
         }
 
+        for (String overlayPackage : mThemePickerIconsOverlayPackages) {
+            addOrUpdateOption(optionsByPrefix, overlayPackage, OVERLAY_CATEGORY_ICON_THEMEPICKER);
+        }
+
         for (IconOption option : optionsByPrefix.values()) {
             if (option.isValid(mContext)) {
                 mOptions.add(option);
@@ -117,14 +125,14 @@ public class IconOptionsProvider extends ThemeComponentOptionProvider<IconOption
 
     private Drawable loadIconPreviewDrawable(String drawableName, String packageName)
             throws NameNotFoundException, NotFoundException {
-
-        Resources overlayRes = mContext.getPackageManager().getResourcesForApplication(packageName);
-        return overlayRes.getDrawable(
-                overlayRes.getIdentifier(drawableName, "drawable", packageName), null);
+        final Resources resources = ANDROID_PACKAGE.equals(packageName)
+                ? Resources.getSystem()
+                : mContext.getPackageManager().getResourcesForApplication(packageName);
+        return resources.getDrawable(
+                resources.getIdentifier(drawableName, "drawable", packageName), null);
     }
 
     private void addDefault() {
-        Resources system = Resources.getSystem();
         IconOption option = new IconOption();
         option.setLabel(mContext.getString(R.string.default_theme_title));
         try {

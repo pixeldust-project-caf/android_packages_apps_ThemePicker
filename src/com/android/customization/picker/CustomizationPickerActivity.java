@@ -17,7 +17,6 @@ package com.android.customization.picker;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
@@ -29,7 +28,6 @@ import android.view.MenuItem;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
-import androidx.core.os.BuildCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
@@ -56,7 +54,9 @@ import com.android.customization.picker.grid.GridFragment;
 import com.android.customization.picker.grid.GridFragment.GridFragmentHost;
 import com.android.customization.picker.theme.ThemeFragment;
 import com.android.customization.picker.theme.ThemeFragment.ThemeFragmentHost;
+import com.android.customization.widget.NoTintDrawableWrapper;
 import com.android.wallpaper.R;
+import com.android.wallpaper.compat.BuildCompat;
 import com.android.wallpaper.model.WallpaperInfo;
 import com.android.wallpaper.module.DailyLoggingAlarmScheduler;
 import com.android.wallpaper.module.FormFactorChecker;
@@ -97,14 +97,18 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
     private CategoryFragment mWallpaperCategoryFragment;
     private WallpaperSetter mWallpaperSetter;
 
+    private boolean mWallpaperCategoryInitialized;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         Injector injector = InjectorProvider.getInjector();
         mDelegate = new WallpaperPickerDelegate(this, this, injector);
         mUserEventLogger = injector.getUserEventLogger(this);
-
         initSections();
+        mWallpaperCategoryInitialized = false;
+
+        // Restore this Activity's state before restoring contained Fragments state.
+        super.onCreate(savedInstanceState);
 
         if (!supportsCustomization()) {
             Log.w(TAG, "Themes not supported, reverting to Wallpaper Picker");
@@ -137,6 +141,18 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
         mUserEventLogger.logResumed();
         // refresh the sections as the preview may have changed
         initSections();
+        if (mBottomNav == null) {
+            return;
+        }
+        CustomizationSection section = mSections.get(mBottomNav.getSelectedItemId());
+        if (section == null) {
+            return;
+        }
+        // Keep CategoryFragment's design to load category within its fragment
+        if (section instanceof WallpaperSection) {
+            switchFragment(section);
+            section.onVisible();
+        }
     }
 
     @Override
@@ -163,6 +179,9 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
         if (!BuildCompat.isAtLeastQ()) {
             return;
         }
+        //if (!BuildCompat.isAtLeastQ()) {
+        //    return;
+        //}
         if (Build.TYPE.equals("user")) {
             return;
         }
@@ -202,8 +221,6 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
 
     private void setUpBottomNavView() {
         mBottomNav = findViewById(R.id.main_bottom_nav);
-        // Clear tint list so it doesn't recolor the indicator dots
-        mBottomNav.setItemIconTintList(null);
         Menu menu = mBottomNav.getMenu();
         DefaultCustomizationPreferences prefs =
             new DefaultCustomizationPreferences(getApplicationContext());
@@ -226,6 +243,10 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
             if (!prefs.getTabVisited(name)) {
                 prefs.setTabVisited(name);
                 hideTipDot(item);
+
+                if (id == R.id.nav_theme) {
+                    getThemeManager().storeEmptyTheme();
+                }
             }
             return true;
         });
@@ -233,7 +254,7 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
 
     private void showTipDot(MenuItem item) {
         Drawable icon = item.getIcon();
-        Drawable dot = getResources().getDrawable(R.drawable.tip_dot);
+        Drawable dot = new NoTintDrawableWrapper(getResources().getDrawable(R.drawable.tip_dot));
         Drawable[] layers = {icon, dot};
         LayerDrawable iconWithDot = new LayerDrawable(layers);
 
@@ -250,6 +271,7 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
         item.setIcon(iconWithDot);
     }
 
+
     private void hideTipDot(MenuItem item) {
         Drawable iconWithDot = item.getIcon();
         if (iconWithDot instanceof LayerDrawable) {
@@ -257,6 +279,17 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
             Drawable icon = layers.getDrawable(0);
             item.setIcon(icon);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().popBackStackImmediate()) {
+            return;
+        }
+        if (moveTaskToBack(false)) {
+            return;
+        }
+        super.onBackPressed();
     }
 
     private void navigateToSection(@IdRes int id) {
@@ -412,7 +445,10 @@ public class CustomizationPickerActivity extends FragmentActivity implements Wal
 
         @Override
         void onVisible() {
-            mDelegate.initialize(mForceCategoryRefresh);
+            if (!mWallpaperCategoryInitialized) {
+                mDelegate.initialize(mForceCategoryRefresh);
+            }
+            mWallpaperCategoryInitialized = true;
         }
     }
 
