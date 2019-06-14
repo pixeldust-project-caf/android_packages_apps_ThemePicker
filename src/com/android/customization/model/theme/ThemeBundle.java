@@ -31,9 +31,7 @@ import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
-import android.icu.text.SimpleDateFormat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -54,17 +52,14 @@ import com.android.wallpaper.asset.BitmapCachingAsset;
 import com.android.wallpaper.model.LiveWallpaperInfo;
 import com.android.wallpaper.model.WallpaperInfo;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,28 +70,22 @@ import java.util.Set;
  */
 public class ThemeBundle implements CustomizationOption<ThemeBundle> {
 
-    private static final String TAG = "ThemeBundle";
-    private final static String EMPTY_JSON = "{}";
-    private final static String TIMESTAMP_FIELD = "_applied_timestamp";
-
     private final String mTitle;
     private final PreviewInfo mPreviewInfo;
     private final boolean mIsDefault;
     protected final Map<String, String> mPackagesByCategory;
     @Nullable private final WallpaperInfo mWallpaperInfo;
-    @Nullable private final String mWallpaperOptions;
     private WallpaperInfo mOverrideWallpaper;
     private Asset mOverrideWallpaperAsset;
     private CharSequence mContentDescription;
 
     protected ThemeBundle(String title, Map<String, String> overlayPackages,
             boolean isDefault, @Nullable WallpaperInfo wallpaperInfo,
-            @Nullable String wallpaperOptions, PreviewInfo previewInfo) {
+            PreviewInfo previewInfo) {
         mTitle = title;
         mIsDefault = isDefault;
         mPreviewInfo = previewInfo;
         mWallpaperInfo = wallpaperInfo;
-        mWallpaperOptions = wallpaperOptions;
         mPackagesByCategory = Collections.unmodifiableMap(overlayPackages);
     }
 
@@ -129,10 +118,10 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
     @Override
     public boolean isActive(CustomizationManager<ThemeBundle> manager) {
         ThemeManager themeManager = (ThemeManager) manager;
+        String serializedOverlays = themeManager.getStoredOverlays();
 
         if (mIsDefault) {
-            String serializedOverlays = themeManager.getStoredOverlays();
-            return TextUtils.isEmpty(serializedOverlays) || EMPTY_JSON.equals(serializedOverlays);
+            return TextUtils.isEmpty(serializedOverlays);
         } else {
             Map<String, String> currentOverlays = themeManager.getCurrentOverlays();
             return mPackagesByCategory.equals(currentOverlays);
@@ -153,8 +142,7 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
             return false;
         }
         if (mIsDefault) {
-            return other.isDefault() || TextUtils.isEmpty(other.getSerializedPackages())
-                    || EMPTY_JSON.equals(other.getSerializedPackages());
+            return other.isDefault() || TextUtils.isEmpty(other.getSerializedPackages());
         }
         // Map#equals ensures keys and values are compared.
         return mPackagesByCategory.equals(other.mPackagesByCategory);
@@ -191,11 +179,6 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         return mWallpaperInfo;
     }
 
-    @Nullable
-    public String getWallpaperOptions() {
-        return mWallpaperOptions;
-    }
-
     boolean isDefault() {
         return mIsDefault;
     }
@@ -205,27 +188,19 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
     }
 
     public String getSerializedPackages() {
-        return getJsonPackages(false).toString();
+        if (isDefault()) {
+            return "";
+        }
+        return getJsonPackages().toString();
     }
 
-    public String getSerializedPackagesWithTimestamp() {
-        return getJsonPackages(true).toString();
-    }
-
-    JSONObject getJsonPackages(boolean insertTimestamp) {
+    JSONObject getJsonPackages() {
         if (isDefault()) {
             return new JSONObject();
         }
         JSONObject json = new JSONObject(mPackagesByCategory);
         // Remove items with null values to avoid deserialization issues.
         removeNullValues(json);
-        if (insertTimestamp) {
-            try {
-                json.put(TIMESTAMP_FIELD, System.currentTimeMillis());
-            } catch (JSONException e) {
-                Log.e(TAG, "Couldn't add timestamp to serialized themebundle");
-            }
-        }
         return json;
     }
 
@@ -325,12 +300,11 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
         @Dimension private int mCornerRadius;
         private Asset mWallpaperAsset;
         private WallpaperInfo mWallpaperInfo;
-        private String mWallpaperOptions;
         protected Map<String, String> mPackages = new HashMap<>();
         private List<Drawable> mAppIcons = new ArrayList<>();
 
         public ThemeBundle build(Context context) {
-            return new ThemeBundle(mTitle, mPackages, mIsDefault, mWallpaperInfo, mWallpaperOptions,
+            return new ThemeBundle(mTitle, mPackages, mIsDefault, mWallpaperInfo,
                     createPreviewInfo(context));
         }
 
@@ -432,11 +406,6 @@ public class ThemeBundle implements CustomizationOption<ThemeBundle> {
 
         public Builder setWallpaperAsset(Asset wallpaperAsset) {
             mWallpaperAsset = wallpaperAsset;
-            return this;
-        }
-
-        public Builder setWallpaperOptions(String wallpaperOptions) {
-            mWallpaperOptions = wallpaperOptions;
             return this;
         }
 

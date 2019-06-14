@@ -37,35 +37,27 @@ public class ContentProviderClockProvider implements ClockProvider {
 
     @Override
     public boolean isAvailable() {
-        return mProviderInfo != null && (mClocks == null || !mClocks.isEmpty());
+        return mProviderInfo != null;
     }
 
     @Override
     public void fetch(OptionsFetchedListener<Clockface> callback, boolean reload) {
         if (!isAvailable()) {
             if (callback != null) {
-                callback.onError(null);
+                callback.onOptionsLoaded(null);
             }
             return;
         }
         if (mClocks != null && !reload) {
             if (callback != null) {
-                if (!mClocks.isEmpty()) {
-                    callback.onOptionsLoaded(mClocks);
-                } else {
-                    callback.onError(null);
-                }
+                callback.onOptionsLoaded(mClocks);
             }
             return;
         }
         new ClocksFetchTask(mContext, mProviderInfo, options -> {
             mClocks = options;
             if (callback != null) {
-                if (!mClocks.isEmpty()) {
-                    callback.onOptionsLoaded(mClocks);
-                } else {
-                    callback.onError(null);
-                }
+                callback.onOptionsLoaded(mClocks);
             }
         }).execute();
     }

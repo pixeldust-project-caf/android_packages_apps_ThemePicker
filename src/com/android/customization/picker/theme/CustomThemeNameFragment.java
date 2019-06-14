@@ -20,6 +20,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -35,7 +36,6 @@ import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
 
 import com.android.customization.model.theme.ThemeBundle.PreviewInfo;
-import com.android.customization.picker.TimeTicker;
 import com.android.customization.picker.theme.ThemePreviewPage.ThemeCoverPage;
 import com.android.wallpaper.R;
 import com.android.wallpaper.asset.Asset;
@@ -63,10 +63,8 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
     private int[] mColorTileIds = {
             R.id.preview_color_qs_0_bg, R.id.preview_color_qs_1_bg, R.id.preview_color_qs_2_bg
     };
-    private int[][] mColorTileIconIds = {
-            new int[]{ R.id.preview_color_qs_0_icon, 0},
-            new int[]{ R.id.preview_color_qs_1_icon, 1},
-            new int[] { R.id.preview_color_qs_2_icon, 3}
+    private int[] mColorTileIconIds = {
+            R.id.preview_color_qs_0_icon, R.id.preview_color_qs_1_icon, R.id.preview_color_qs_2_icon
     };
 
     private int[] mShapeIconIds = {
@@ -76,7 +74,7 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
 
     private Asset mWallpaperAsset;
     private ThemeCoverPage mCoverPage;
-    private TimeTicker mTicker;
+
     private EditText mNameEditor;
 
     @Override
@@ -108,27 +106,6 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
         return view;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        mTicker = TimeTicker.registerNewReceiver(getContext(), this::updateTime);
-        updateTime();
-    }
-
-    private void updateTime() {
-        if (mCoverPage != null) {
-            mCoverPage.updateTime();
-        }
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (getContext() != null) {
-            getContext().unregisterReceiver(mTicker);
-        }
-    }
-
     private void bindCover(CardView card) {
         Context context = getContext();
         PreviewInfo previewInfo = mCustomThemeManager.buildCustomThemePreviewInfo(context);
@@ -137,7 +114,7 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
                 previewInfo.headlineFontFamily, previewInfo.bottomSheeetCornerRadius,
                 previewInfo.shapeDrawable, previewInfo.shapeAppIcons, null,
                 mColorButtonIds, mColorTileIds, mColorTileIconIds, mShapeIconIds,
-                new WallpaperLayoutListener());
+                new WallpaperLayoutListener(context));
         mCoverPage.setCard(card);
         mCoverPage.bindPreviewContent();
         mNameEditor.addTextChangedListener(new TextWatcher() {
@@ -159,7 +136,12 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
     }
 
     private class WallpaperLayoutListener implements OnLayoutChangeListener {
+        private final Drawable mScrim;
 
+        WallpaperLayoutListener(Context context) {
+            mScrim = context.getResources()
+                    .getDrawable(R.drawable.theme_cover_scrim, context.getTheme());
+        }
         @Override
         public void onLayoutChange(View view, int left, int top, int right,
                 int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
@@ -178,8 +160,9 @@ public class CustomThemeNameFragment extends CustomThemeStepFragment {
         private void setWallpaperBitmap(View view, Bitmap bitmap) {
             Resources res = view.getContext().getResources();
             Drawable background = new BitmapDrawable(res, bitmap);
-            background.setAlpha(ThemeCoverPage.COVER_PAGE_WALLPAPER_ALPHA);
-
+            if (mScrim != null) {
+                background = new LayerDrawable(new Drawable[]{background, mScrim});
+            }
             view.findViewById(R.id.theme_preview_card_background).setBackground(background);
         }
     }

@@ -20,7 +20,6 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.StringRes;
-import androidx.constraintlayout.widget.Guideline;
 
 import com.android.customization.picker.BasePreviewAdapter.PreviewPage;
 import com.android.wallpaper.R;
@@ -31,11 +30,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 abstract class ThemePreviewPage extends PreviewPage {
-
-    public interface TimeContainer {
-        void updateTime();
-    }
-
     @StringRes
     final int nameResId;
     @DrawableRes
@@ -77,14 +71,7 @@ abstract class ThemePreviewPage extends PreviewPage {
 
     protected abstract void bindBody(boolean forceRebind);
 
-    static class ThemeCoverPage extends ThemePreviewPage implements TimeContainer {
-
-        public static final int COVER_PAGE_WALLPAPER_ALPHA = 0x66;
-        /**
-         * Maps which icon from ResourceConstants#ICONS_FOR_PREVIEW to use for each icon in the
-         * top bar (fake "status bar") of the cover page.
-         */
-        private static final int [] sTopBarIconToPreviewIcon = new int [] { 0, 6, 7 };
+    static class ThemeCoverPage extends ThemePreviewPage {
 
         private final Typeface mHeadlineFont;
         private final List<Drawable> mIcons;
@@ -92,12 +79,12 @@ abstract class ThemePreviewPage extends PreviewPage {
         private Drawable mShapeDrawable;
         private final int[] mColorButtonIds;
         private final int[] mColorTileIds;
-        private final int[][] mColorTileIconIds;
+        private final int[] mColorTileIconIds;
         private final int[] mShapeIconIds;
         private final Resources mRes;
         private String mTitle;
         private OnClickListener mEditClickListener;
-        private final OnLayoutChangeListener[] mListeners;
+        private final OnLayoutChangeListener mListener;
         private final int mCornerRadius;
         private final ColorStateList mTintList;
 
@@ -106,8 +93,8 @@ abstract class ThemePreviewPage extends PreviewPage {
                 Drawable shapeDrawable,
                 List<Drawable> shapeAppIcons,
                 OnClickListener editClickListener,
-                int[] colorButtonIds, int[] colorTileIds, int[][] colorTileIconIds,
-                int[] shapeIconIds, OnLayoutChangeListener... wallpaperListeners) {
+                int[] colorButtonIds, int[] colorTileIds, int[] colorTileIconIds,
+                int[] shapeIconIds, OnLayoutChangeListener wallpaperListener) {
             super(context, 0, 0, R.layout.preview_card_cover_content, accentColor);
             mRes = context.getResources();
             mTitle = title;
@@ -121,7 +108,7 @@ abstract class ThemePreviewPage extends PreviewPage {
             mColorTileIds = colorTileIds;
             mColorTileIconIds = colorTileIconIds;
             mShapeIconIds = shapeIconIds;
-            mListeners = wallpaperListeners;
+            mListener = wallpaperListener;
             // Color QS icons:
             int controlGreyColor = mRes.getColor(R.color.control_grey, null);
             mTintList = new ColorStateList(
@@ -143,14 +130,8 @@ abstract class ThemePreviewPage extends PreviewPage {
             if (card == null) {
                 return;
             }
-            if (mListeners != null) {
-                for (OnLayoutChangeListener listener : mListeners) {
-                    if (listener != null) {
-                        card.addOnLayoutChangeListener(listener);
-                    }
-                }
-            }
 
+            card.addOnLayoutChangeListener(mListener);
             if (forceRebind) {
                 card.requestLayout();
             }
@@ -162,14 +143,14 @@ abstract class ThemePreviewPage extends PreviewPage {
                 }
             }
             for (int i = 0; i < 3 && i < mIcons.size(); i++) {
-                Drawable icon = mIcons.get(mColorTileIconIds[i][1]).getConstantState()
-                        .newDrawable().mutate();
+                Drawable icon =
+                        mIcons.get(i).getConstantState().newDrawable().mutate();
                 Drawable bgShape = mShapeDrawable.getConstantState().newDrawable();
                 bgShape.setTint(accentColor);
 
                 ImageView bg = card.findViewById(mColorTileIds[i]);
                 bg.setImageDrawable(bgShape);
-                ImageView fg = card.findViewById(mColorTileIconIds[i][0]);
+                ImageView fg = card.findViewById(mColorTileIconIds[i]);
                 fg.setImageDrawable(icon);
             }
 
@@ -195,15 +176,9 @@ abstract class ThemePreviewPage extends PreviewPage {
 
             ViewGroup iconsContainer = card.findViewById(R.id.theme_preview_top_bar_icons);
 
-            for (int i = 0; i < iconsContainer.getChildCount(); i++) {
-                int iconIndex = sTopBarIconToPreviewIcon[i];
-                if (iconIndex < mIcons.size()) {
-                    ((ImageView) iconsContainer.getChildAt(i))
-                            .setImageDrawable(mIcons.get(iconIndex).getConstantState()
-                                    .newDrawable().mutate());
-                } else {
-                    iconsContainer.getChildAt(i).setVisibility(View.GONE);
-                }
+            for (int i = 0; i < iconsContainer.getChildCount() && i < mIcons.size(); i++) {
+                ((ImageView) iconsContainer.getChildAt(i))
+                        .setImageDrawable(mIcons.get(i).getConstantState().newDrawable().mutate());
             }
 
             ViewGroup body = card.findViewById(R.id.theme_preview_card_body_container);
@@ -228,20 +203,6 @@ abstract class ThemePreviewPage extends PreviewPage {
                             cornerRadius, cornerRadius, cornerRadius, cornerRadius,
                             cornerRadius, cornerRadius, cornerRadius, cornerRadius});
                 }
-            }
-
-            Guideline guideline = card.findViewById(R.id.guideline);
-            if (guideline != null) {
-                guideline.setGuidelineEnd(card.getResources().getDimensionPixelOffset(
-                        R.dimen.preview_theme_cover_content_bottom));
-            }
-        }
-
-        @Override
-        public void updateTime() {
-            if (card != null) {
-                ((TextView) card.findViewById(R.id.theme_preview_clock)).setText(
-                        getFormattedTime());
             }
         }
 

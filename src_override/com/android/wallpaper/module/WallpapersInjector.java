@@ -65,7 +65,6 @@ public class WallpapersInjector extends BaseWallpaperInjector {
 
     @Override
     public Fragment getPreviewFragment(
-        Context context,
         WallpaperInfo wallpaperInfo,
         int mode,
         boolean testingModeEnabled) {
