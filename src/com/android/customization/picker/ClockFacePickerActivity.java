@@ -56,6 +56,7 @@ public class ClockFacePickerActivity extends FragmentActivity implements ClockFr
                 result.putExtra(EXTRA_CLOCK_FACE_NAME, option.getId());
                 setResult(RESULT_OK, result);
                 callback.onSuccess();
+                finish();
             }
 
             @Override
@@ -63,12 +64,16 @@ public class ClockFacePickerActivity extends FragmentActivity implements ClockFr
                 return getIntent().getStringExtra(EXTRA_CLOCK_FACE_NAME);
             }
         };
-
-        final FragmentManager fm = getSupportFragmentManager();
-        final FragmentTransaction fragmentTransaction = fm.beginTransaction();
-        final ClockFragment clockFragment = ClockFragment.newInstance(getString(R.string.clock_title));
-        fragmentTransaction.replace(R.id.fragment_container, clockFragment);
-        fragmentTransaction.commitNow();
+        if (!mClockManager.isAvailable()) {
+            finish();
+        } else {
+            final FragmentManager fm = getSupportFragmentManager();
+            final FragmentTransaction fragmentTransaction = fm.beginTransaction();
+            final ClockFragment clockFragment = ClockFragment.newInstance(
+                    getString(R.string.clock_title));
+            fragmentTransaction.replace(R.id.fragment_container, clockFragment);
+            fragmentTransaction.commitNow();
+        }
     }
 
     @Override
