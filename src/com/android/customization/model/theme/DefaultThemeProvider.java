@@ -300,7 +300,6 @@ public class DefaultThemeProvider extends ResourcesApkProvider implements ThemeB
             mOverlayProvider.addSystemDefaultColor(builder);
         }
 
-
         try {
             String fontOverlayPackage = getOverlayPackage(FONT_PREFIX, DEFAULT_THEME_NAME);
             mOverlayProvider.addFontOverlay(builder, fontOverlayPackage);
