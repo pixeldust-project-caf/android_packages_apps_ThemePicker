@@ -129,14 +129,28 @@ public class ThemeFragment extends ToolbarFragment {
                 .getCurrentWallpaperFactory(getActivity().getApplicationContext());
         mPreviewPager = view.findViewById(R.id.theme_preview_pager);
         mOptionsContainer = view.findViewById(R.id.options_container);
-        view.findViewById(R.id.apply_button).setOnClickListener(v -> {
+        view.findViewById(R.id.theme_button).setOnClickListener(v -> {
+            launchThemes();
+        });
+
+        /*view.findViewById(R.id.apply_button).setOnClickListener(v -> {
             applyTheme();
         });
         mUseMyWallpaperButton = view.findViewById(R.id.use_my_wallpaper);
         mUseMyWallpaperButton.setOnCheckedChangeListener(this::onUseMyWallpaperCheckChanged);
+        */        
         setUpOptions(savedInstanceState);
+        mOptionsContainer.setVisibility(View.GONE);
 
         return view;
+    }
+
+
+    private void launchThemes() {
+        Intent themesExtrasIntent = new Intent();
+        themesExtrasIntent.setClassName(
+                "com.dirtyunicorns.themes", "com.dirtyunicorns.themes.MainActivity");
+        startActivity(themesExtrasIntent);
     }
 
     private void applyTheme() {
@@ -280,7 +294,7 @@ public class ThemeFragment extends ToolbarFragment {
                         mEventLogger.logThemeSelected(mSelectedTheme,
                                 selected instanceof CustomTheme);
                         createAdapter(options);
-                        updateButtonsVisibility();
+                        //updateButtonsVisibility();
                     }
                 });
                 mOptionsController.initOptions(mThemeManager);

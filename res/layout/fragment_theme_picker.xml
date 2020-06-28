@@ -53,13 +53,13 @@
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginTop="10dp"
                 android:layout_weight="1"
-                app:layout_constraintBottom_toTopOf="@id/use_my_wallpaper"
+                app:layout_constraintBottom_toTopOf="@id/theme_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/theme_preview_pager"
                 app:layout_constraintVertical_bias="1.0"/>
 
-            <CheckBox
+            <!--<CheckBox
                 android:id="@+id/use_my_wallpaper"
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/min_taptarget_height"
@@ -86,7 +86,20 @@
                 android:layout_marginBottom="10dp"
                 android:text="@string/apply_theme_btn"
                 app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/> -->
+
+            <Button
+                android:id="@+id/theme_button"
+                style="@style/ActionPrimaryButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginEnd="10dp"
+                android:layout_marginBottom="10dp"
+                android:text="@string/theme_btn"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.core.widget.ContentLoadingProgressBar

@@ -18,5 +18,6 @@
 
     <string name="show_statusarea">Show status area (weather etc.)</string>
     <string name="applied_changes_msg">Clock settings applied (SysUI restart may be required)</string>
+    <string name="theme_btn">Choose a theme</string>
 
 </resources>

@@ -18,5 +18,6 @@
 
     <string name="show_statusarea">Statusbereich anzeigen (Wetter usw.)</string>
     <string name="applied_changes_msg">Uhr-Einstellungen angewendet (SysUI-Neustart könnte erforderlich sein)</string>
+    <string name="theme_btn">UI-Stil anpassen</string>
 
 </resources>
