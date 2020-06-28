@@ -2,7 +2,9 @@ package com.android.customization.picker.theme;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -23,6 +25,7 @@ import androidx.annotation.StringRes;
 import androidx.constraintlayout.widget.Guideline;
 
 import com.android.customization.picker.BasePreviewAdapter.PreviewPage;
+import com.android.internal.util.pixeldust.PixeldustUtils;
 import com.android.wallpaper.R;
 
 import java.text.FieldPosition;
@@ -58,8 +61,16 @@ abstract class ThemePreviewPage extends PreviewPage {
             this.icon = null;
         }
         this.contentLayoutRes = contentLayoutRes;
-        this.accentColor = accentColor;
+        this.accentColor = getSystemAccentColor(context); // dirty hack :P
         this.inflater = LayoutInflater.from(context);
+    }
+
+    private int getSystemAccentColor(Context context) {
+        TypedArray ta = context.obtainStyledAttributes(android.R.style.TextAppearance_DeviceDefault,
+                new int[]{android.R.attr.colorAccent});
+        int colorAccent = ta.getColor(0, 0);
+        ta.recycle();
+        return colorAccent;
     }
 
     @Override
@@ -114,7 +125,7 @@ abstract class ThemePreviewPage extends PreviewPage {
                 int[] shapeIconIds, OnLayoutChangeListener... wallpaperListeners) {
             super(context, 0, 0, R.layout.preview_card_cover_content, accentColor);
             mRes = context.getResources();
-            mTitle = title;
+            mTitle = "PixelDust\n" + getCurrentThemeTitle(context);
             mHeadlineFont = headlineFont;
             mIcons = icons;
             mShapeDrawable = shapeDrawable;
@@ -139,6 +150,22 @@ abstract class ThemePreviewPage extends PreviewPage {
                             controlGreyColor
                     }
             );
+        }
+
+        private String getCurrentThemeTitle(Context context) {
+            Resources res = context.getResources();
+            if ((res.getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                    == Configuration.UI_MODE_NIGHT_NO) {
+                return "Light";
+            } else if (PixeldustUtils.isThemeEnabled("com.android.theme.chocox.system")) {
+                return "Black Coffee";
+            } else if (PixeldustUtils.isThemeEnabled("com.android.theme.solarizeddark.system")) {
+                return "Solarized Dark";
+            } else if (PixeldustUtils.isThemeEnabled("com.android.theme.pitchblack.system")) {
+                return "Pitch Black";
+            } else { // Google dark theme
+                return "Dark";
+            }
         }
 
         @Override
