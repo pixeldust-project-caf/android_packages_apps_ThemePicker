@@ -344,7 +344,7 @@ public class DefaultThemeProvider extends ResourcesApkProvider implements ThemeB
             mOverlayProvider.addSystemDefaultIcons(builder, SYSUI_PACKAGE, ICONS_FOR_PREVIEW);
         }
 
-        addWallpaper(DEFAULT_THEME_NAME, builder);
+        //addWallpaper(DEFAULT_THEME_NAME, builder);
 
         mThemes.add(builder.build(mContext));
     }
